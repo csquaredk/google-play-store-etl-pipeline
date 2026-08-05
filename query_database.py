@@ -2,8 +2,8 @@ import sqlite3
 import pandas as pd
 
 def peek_database():
-    # Open the database connection safely
-    with sqlite3.connect('android_pipeline.db') as conn:
+    # Open the database connection safely using the correct database name
+    with sqlite3.connect('play_store.db') as conn:
         
         # 1. Pull the Manager's Telemetry Report
         telemetry_query = """
@@ -13,13 +13,13 @@ def peek_database():
         """
         telemetry_df = pd.read_sql(telemetry_query, conn)
         
-        # 2. Pull a sample of your clean, baseline data
+        # 2. Pull a sample of your clean, baseline data (removed hardcoded run_id)
         sample_reviews_query = """
             SELECT r.app_id, a.app_name, r.rating, r.clean_text, r.is_english_flag, r.run_id, b.batch_id
             FROM reviews r
             JOIN apps a ON r.app_id = a.app_id
             JOIN ingestion_batches b ON r.run_id = b.run_id
-            WHERE r.is_clean_baseline = 1 AND r.run_id = 2
+            WHERE r.is_clean_baseline = 1
             LIMIT 5
         """
         reviews_df = pd.read_sql(sample_reviews_query, conn)
