@@ -44,6 +44,7 @@ Every execution generates a master batch ID and records granular telemetry. The 
 ### Project Structure
 *   `android_pipeline.py`: The main Python script that contains the master execution loop and database initialization.
 *   `notebooks/`: Contains a sample testing environment to validate the ETL logic and output telemetry summaries.
+*   `assets/`: Houses static assets for documentation, such as the telemetry summary screenshot.
 
 ### Execution Steps
 1. Ensure your environment has the required dependencies installed, primarily `pandas`, `google-play-scraper`, and `langdetect`. 
