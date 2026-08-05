@@ -44,11 +44,10 @@ Every execution generates a master batch ID and records granular telemetry. The 
 ### Project Structure
 *   `android_pipeline.py`: The main Python script that contains the master execution loop and database initialization.
 *   `notebooks/`: Contains a sample testing environment to validate the ETL logic and output telemetry summaries.
-*   `data/`: Generated automatically to house the localized SQLite database (`play_store.db`).
 
 ### Execution Steps
-1. Ensure your environment has the required dependencies installed, primarily `pandas`, `google-play-scraper`, `dataframe_image`, and `langdetect`. 
-2. Run the main Python script in your terminal to build the schema, scrape the 20-app portfolio, and populate the database.
+1. Ensure your environment has the required dependencies installed, primarily `pandas`, `google-play-scraper`, and `langdetect`. 
+2. Run the main Python script in your terminal to build the schema, scrape the 20-app portfolio, and automatically generate the localized SQLite database (`play_store.db`).
 3. Open the sample Jupyter Notebook to query the database, review the telemetry, and validate the idempotency constraints.
 
 ---
