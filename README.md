@@ -1,57 +1,57 @@
-# Android Google Play Store ETL Pipeline 📱📊
+# Android App Store ETL Pipeline
 
-> **An automated data engineering pipeline that extracts, transforms, and loads (ETL) mobile app reviews into a relational database to provide a clean, deduplicated foundation for downstream analytics.**
+This project is a robust, automated ETL data pipeline designed to scrape, clean, and store user review data from a portfolio of 20 top-tier Google Play Store applications. By converting unstructured, noisy app store feedback into a highly structured, queryable relational database, this pipeline lays the foundational data architecture required for downstream machine learning applications, sentiment analysis, and product analytics.
 
-## 📖 Project Overview
-This project was developed during my Data Engineering internship at **Sciencia AI**. It is a resilient Python-based ETL pipeline designed to scrape chronological user reviews from the Google Play Store. It processes the raw JSON data, applies data quality and language-detection flags to filter for high-signal English text, and utilizes an idempotent SQLite database architecture to prevent historical data duplication. 
-
-### 🔍 Data Source Strategy: Why Google Play?
-Before building the pipeline, the Google Play Store was evaluated and selected as the ideal data source for sustainable review ingestion. Compared to other platforms, Google Play provides:
-* **High-Volume Velocity:** A consistent, daily stream of user feedback.
-* **Granular Metadata:** Native access to exact timestamps, application versions, and user ratings.
-* **Platform Stability:** A reliable extraction endpoint that supports scalable, long-term chronological scraping without heavy throttling.
+## Why the Google Play Store?
+The Google Play Store serves as a massive, real-time repository of unfiltered user sentiment. By targeting this specific ecosystem, the pipeline captures high-velocity data that perfectly pairs standardized metrics (star ratings, timestamps, and app versions) with rich, qualitative text. This combination makes it an ideal, continually updating dataset for extracting actionable product insights and training Natural Language Processing (NLP) models.
 
 ---
 
-## 🎯 The 20-App Portfolio
-The pipeline actively monitors 20 leading applications across six major industry sectors to provide a diverse baseline for text analysis:
+## System Architecture (The ETL Process)
+The pipeline executes a three-stage architecture:
 
-* **Social & Communication:** WhatsApp, YouTube, Instagram, Discord, X (Twitter)
-* **Workspace & Productivity:** Gmail, Zoom, Outlook, Teams
-* **E-Commerce & Marketplaces:** Amazon, eBay
-* **FinTech & Payments:** PayPal, Venmo
-* **Mobility, Travel & Maps:** Uber, Lyft, Airbnb, Google Maps
-* **Entertainment & Streaming:** Netflix, Spotify, Twitch
+*   **Extract:** Utilizing the Google Play Scraper API, the system programmatically extracts live, paginated user reviews across a 20-app portfolio (including WhatsApp, Uber, and YouTube). Rate limiting and sleep intervals are built in to handle large-scale pulls safely.
+*   **Transform:** The raw data undergoes rigorous quality control. The text is standardized, and Python's `langdetect` library is applied to filter out non-English reviews. A word-count threshold removes low-signal data, and `pandas` is used to flag and isolate duplicates.
+*   **Load:** The cleaned data is loaded into a local SQLite database. The schema is highly normalized, featuring isolated tables for Apps, Ingestion Batches, and Reviews. These tables are linked via foreign keys to ensure data integrity and support highly efficient database indexing for future queries.
 
 ---
 
-## 🏗️ Database Architecture & Schema
-The data is stored in a permanent SQLite relational database (`android_pipeline.db`). The architecture utilizes a **Task-Level Batching** system to guarantee pipeline durability.
+## Database Architecture & Schema Design
+The local SQLite database is built with a highly normalized relational schema designed for data integrity and downstream analytical querying. It automatically initializes through the Python script to ensure the structure exists prior to any data ingestion. 
 
-### Terminology Hierarchy
-* **`batch_id` (The Master Group):** A timestamped string (e.g., `BATCH_20260715_110500`) generated once per script execution. This ensures all 20 apps processed during a single run are mathematically grouped together.
-* **`run_id` (The Task):** An auto-incrementing Primary Key generated for every individual app scraped. If the scraper fails on App #15, the first 14 `run_ids` remain safely locked and committed to the database.
+The architecture consists of three core tables:
 
-### Core Tables
-1. **`apps`**: Stores application metadata (Name, Platform, Category, Store URL).
-2. **`ingestion_batches`**: The historical telemetry ledger. Tracks performance metrics including runtime, total scraped, rows inserted, and duplicates skipped per `run_id`.
-3. **`reviews`**: The granular data table containing the raw text, star ratings, and data quality flags. Linked to both the app and the ingestion batch via Foreign Keys.
+*   **Apps Table (Dimension Table):** Stores core application metadata. Features an auto-incrementing primary key (`app_id`) and enforces a `UNIQUE` constraint on the app name to prevent duplicate portfolio entries.
+*   **Ingestion Batches Table (Audit Table):** Serves as the system's telemetry log. Records metadata for every pipeline execution, tracked by a primary `run_id` and grouped by a timestamped master `batch_id`. It captures performance metrics like runtime seconds, rows inserted, and duplicates skipped, providing a complete audit trail for the ETL process.
+*   **Reviews Table (Fact Table):** The central repository for all scraped data. It enforces a `UNIQUE` constraint on the `store_review_id` from Google to guarantee pipeline idempotency. It employs foreign keys (`app_id` and `run_id`) to cleanly map each review back to its parent application and the specific batch that ingested it. This table houses both the raw text and the transformed boolean quality flags (e.g., `is_clean_baseline`, `is_english_flag`), which streamlines future database indexing and machine learning classification workflows.
 
 ---
 
-## 🧹 Data Quality & Transformation Pipeline
-Before being loaded into the database, every raw review passes through a Python transformation layer to generate boolean flags for downstream data scientists:
+## Key Engineering Features
 
-* **`is_low_signal`**: Flags reviews with fewer than 3 words.
-* **`is_english_flag`**: Utilizes the `langdetect` library (with temporary emoji-stripping) to verify the text is written in English.
-* **`is_duplicate`**: Flags reviews that share an exact `store_review_id` to prevent data pollution.
-* **`is_clean_baseline`**: A master boolean. Returns `TRUE` only if the review is English, contains 3+ words, and is not a duplicate. 
+### Idempotency & Duplicate Exclusion
+The pipeline is entirely idempotent, meaning it can be executed continuously without duplicating data or corrupting the database. By enforcing a `UNIQUE` constraint on the store review IDs and utilizing an `INSERT OR IGNORE` SQL methodology, the system safely ignores previously ingested records and only appends fresh user feedback.
+
+### Automated Telemetry & Batch Tracking
+Every execution generates a master batch ID and records granular telemetry. The `ingestion_batches` table tracks the run date, total rows scraped, successful insertions, duplicates skipped, and total runtime seconds per app. 
+
+![Telemetry Summary of Idempotent Pipeline](assets/telemetry_summary.png)
 
 ---
 
-## 🚀 How to Run the Pipeline
+## Quick Start / How to Run
 
-### 1. Install Dependencies
-Ensure you have Python 3 installed, then install the required libraries via your terminal:
-```bash
-pip install -r requirements.txt
+### Project Structure
+*   `android_pipeline.py`: The main Python script that contains the master execution loop and database initialization.
+*   `notebooks/`: Contains a sample testing environment to validate the ETL logic and output telemetry summaries.
+*   `data/`: Generated automatically to house the localized SQLite database (`play_store.db`).
+
+### Execution Steps
+1. Ensure your environment has the required dependencies installed, primarily `pandas`, `google-play-scraper`, `dataframe_image`, and `langdetect`. 
+2. Run the main Python script in your terminal to build the schema, scrape the 20-app portfolio, and populate the database.
+3. Open the sample Jupyter Notebook to query the database, review the telemetry, and validate the idempotency constraints.
+
+---
+
+## Future Scope
+With the structured database successfully populated and pipeline constraints fully validated, the next phase of this data architecture will involve building an automated orchestration schedule and applying unsupervised machine learning algorithms to classify user sentiment and categorize feature requests.
