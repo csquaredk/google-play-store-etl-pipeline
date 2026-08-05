@@ -25,7 +25,7 @@ def is_english(text):
 # ==========================================
 # STEP 0: DATABASE SETUP 
 # ==========================================
-def init_db(db_name='android_pipeline.db'):
+def init_db(db_name='play_store.db'):
     """Ensures the schema exists before we try to insert data."""
     conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
@@ -142,7 +142,7 @@ def transform_data(df):
 # ==========================================
 # STEP 3: LOAD 
 # ==========================================
-def load_to_sqlite(df, app_name, category, store_url, runtime_seconds, batch_id, db_name='android_pipeline.db'):
+def load_to_sqlite(df, app_name, category, store_url, runtime_seconds, batch_id, db_name='play_store.db'):
     print("-> LOAD: Connecting to database...")
     conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
