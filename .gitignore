@@ -1,0 +1,10 @@
+# Databases
+*.db
+*.sqlite
+
+# OS generated files
+.DS_Store
+.DS_Store?
+
+# Python cache
+__pycache__/
